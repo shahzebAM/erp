@@ -26,7 +26,8 @@ export default function App() {
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [targetCustomerId, setTargetCustomerId] = useState<string | null>(null);
   
-  const [companiesList, setCompaniesList] = useState<string[]>(['Surgicom', 'Olten', 'Ordent']);
+  // REMOVED HARDCODED COMPANIES. STARTS EMPTY NOW.
+  const [companiesList, setCompaniesList] = useState<string[]>([]);
 
   const [globalModules, setGlobalModules] = useState<any>(() => {
     const saved = localStorage.getItem('dev_global_modules');
@@ -116,18 +117,8 @@ export default function App() {
       const res = await fetch(`${API_BASE_URL}/companies`);
       if (res.ok) {
         const data = await res.json();
-        if (data.length > 0) {
-          setCompaniesList(data.map((c: any) => c.name));
-        } else {
-          await Promise.all([
-            fetch(`${API_BASE_URL}/companies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Surgicom' }) }),
-            fetch(`${API_BASE_URL}/companies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Olten' }) }),
-            fetch(`${API_BASE_URL}/companies`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Ordent' }) })
-          ]);
-          const newRes = await fetch(`${API_BASE_URL}/companies`);
-          const newData = await newRes.json();
-          setCompaniesList(newData.map((c: any) => c.name));
-        }
+        // ONLY SETS WHAT COMES DIRECTLY FROM THE DATABASE NOW
+        setCompaniesList(data.map((c: any) => c.name));
       }
     } catch (e) { console.error("Could not fetch companies"); }
   };
@@ -221,7 +212,7 @@ export default function App() {
       companiesList={companiesList} onAddCompany={handleAddCompany} onRemoveCompany={handleRemoveCompany} 
       onSelectCompany={setSelectedCompany} onManageUsers={() => setActiveModule('users')} onLogout={handleLogout} 
       loginUsername={loginUsername} currentUser={currentUser} API_BASE_URL={API_BASE_URL}
-      adminUsers={adminUsers} // <-- FED DIRECTLY FROM THE LIVE POLLING
+      adminUsers={adminUsers} 
     />
   );
 
@@ -241,7 +232,7 @@ export default function App() {
       hasWarehouses={userHasWarehouses && globalModules.warehouses} hasPurchasing={userHasPurchasing && globalModules.purchasing}
       hasSales={userHasSales && globalModules.sales}
       onChangeCompany={() => setSelectedCompany(null)} onSelectModule={setActiveModule} onLogout={handleLogout} API_BASE_URL={API_BASE_URL}
-      adminUsers={adminUsers} // <-- FED DIRECTLY FROM THE LIVE POLLING
+      adminUsers={adminUsers} 
     />
   }
 

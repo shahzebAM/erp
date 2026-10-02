@@ -35,7 +35,7 @@ export default function CompanyModule({
   isGateway, allowedCompanies, hasUsers, onSelectCompany, onManageUsers, onLogout,
   selectedCompany, loginUsername, currentUser, adminUsers = [],
   hasPayroll, hasAiDocs, hasProducts, hasInventory, hasWarehouses, hasPurchasing, hasSales,
-  onChangeCompany, onSelectModule, onAddCompany, onRemoveCompany, companiesList = [], API_BASE_URL
+  onChangeCompany, onSelectModule, onAddCompany, onRemoveCompany, companiesList, API_BASE_URL
 }: any) {
   
   const [showAddModal, setShowAddModal] = useState(false);
@@ -151,7 +151,7 @@ export default function CompanyModule({
     e.preventDefault();
     const trimmed = newCompany.trim();
     if (trimmed) {
-      if (companiesList.includes(trimmed)) return showToast("A workspace with this name already exists.", "error");
+      if (companiesList && companiesList.includes(trimmed)) return showToast("A workspace with this name already exists.", "error");
       onAddCompany(trimmed);
       showToast(`Workspace "${trimmed}" created successfully.`, "success");
       setNewCompany('');
@@ -170,11 +170,15 @@ export default function CompanyModule({
     }
   };
 
+  // GENERIC THEME GENERATOR FOR DYNAMIC COMPANIES
   const getCompanyTheme = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower === 'surgicom') return { title: 'text-blue-950', sub: 'Trading Corporation', iconBg: 'bg-blue-50', icon: 'text-blue-600', borderHover: 'hover:border-blue-400' };
-    if (lower === 'olten') return { title: 'text-indigo-950', sub: 'Instruments', iconBg: 'bg-indigo-50', icon: 'text-indigo-600', borderHover: 'hover:border-indigo-400' };
-    if (lower === 'ordent') return { title: 'text-amber-900', sub: 'Dental Clinic', iconBg: 'bg-amber-50', icon: 'text-amber-600', borderHover: 'hover:border-amber-400' };
+    // Generate a consistent but distinct color scheme based on the company name's length
+    const hash = name.length % 4;
+    
+    if (hash === 0) return { title: 'text-blue-950', sub: 'Workspace Environment', iconBg: 'bg-blue-50', icon: 'text-blue-600', borderHover: 'hover:border-blue-400' };
+    if (hash === 1) return { title: 'text-indigo-950', sub: 'Workspace Environment', iconBg: 'bg-indigo-50', icon: 'text-indigo-600', borderHover: 'hover:border-indigo-400' };
+    if (hash === 2) return { title: 'text-amber-900', sub: 'Workspace Environment', iconBg: 'bg-amber-50', icon: 'text-amber-600', borderHover: 'hover:border-amber-400' };
+    
     return { title: 'text-slate-900', sub: 'Workspace Environment', iconBg: 'bg-slate-100', icon: 'text-slate-600', borderHover: 'hover:border-slate-400' };
   };
 
@@ -364,7 +368,9 @@ export default function CompanyModule({
 
   // --- WORKSPACE LIST VIEW (GATEWAY OFF) ---
   if (!isGateway) {
-    const available = companiesList.filter((c: string) => allowedCompanies[c]);
+    const available = companiesList && companiesList.length > 0 
+      ? companiesList.filter((c: string) => allowedCompanies[c]) 
+      : [];
 
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center p-4 sm:p-8 font-sans selection:bg-slate-200 relative pb-24">
