@@ -1,0 +1,375 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id                     Int                 @id @default(autoincrement())
+  employeeId             String?
+  firstName              String
+  middleName             String?
+  lastName               String
+  dateOfBirth            DateTime
+  address                String
+  civilStatus            String
+  baseRate               Float
+  employmentStatus       String
+  tin                    String?             @unique
+  sssNumber              String?             @unique
+  philhealth             String?             @unique
+  pagIbig                String?             @unique
+  bankAccount            String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @default(now()) @updatedAt
+  cashAdvanceBalance     Float               @default(0)
+  cashAdvanceInstallment Float               @default(0)
+  company                String              @default("Olten")
+  
+  attendances            Attendance[]
+  payrolls               Payroll[]
+  inventoryMovements     InventoryMovement[]
+  loanBalance            Float               @default(0)
+  loanInstallment        Float               @default(0)
+}
+
+model Admin {
+  id       Int     @id @default(autoincrement())
+  username String  @unique
+  password String
+  role     String  @default("Admin")
+  modules  Json?
+  status   String  @default("Active")
+  moduleOrder   String[] @default([])
+  isOnline Boolean @default(false)
+}
+
+model Settings {
+  id         Int    @id @default(autoincrement())
+  company    String @unique @default("Global") 
+  shiftStart String @default("08:00")
+  shiftEnd   String @default("17:00")
+}
+
+model Attendance {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  date       String
+  timeIn     String
+  timeOut    String
+  hours      Float
+  reason     String?
+  shiftStart String?
+  shiftEnd   String?
+  createdAt  DateTime @default(now())
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Payroll {
+  id                 Int      @id @default(autoincrement())
+  employeeId         Int
+  daysWorked         Float
+  totalHours         Float
+  cashAdvance        Float    @default(0)
+  companyLoan        Float    @default(0)
+  sssDeduction       Float    @default(0)
+  pagIbigDeduct      Float    @default(0)
+  philhealthDeduct   Float    @default(0)
+  tax                Float    @default(0)
+  grossPay           Float
+  netPay             Float
+  createdAt          DateTime @default(now())
+  pagIbigHousingLoan Float    @default(0)
+  pagIbigLoan        Float    @default(0)
+  pagIbigCalamity    Float    @default(0)
+  pagIbigSalaryLoan  Float    @default(0)
+  sssCalamityLoan    Float    @default(0)
+  sssProvident       Float    @default(0)
+  sssSalaryLoan      Float    @default(0)
+  employee           Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id              Int      @id @default(autoincrement())
+  filename        String
+  originalName    String
+  mimeType        String
+  sizeBytes       Int
+  company         String
+  geminiFileUri   String?
+  geminiFileId    String?
+  status          String   @default("PROCESSING")
+  uploadedBy      String
+  createdAt       DateTime @default(now())
+  googleDriveLink String?
+
+  @@index([company])
+}
+
+model SearchHistory {
+  id               Int      @id @default(autoincrement())
+  username         String
+  company          String
+  query            String
+  response         String
+  modelUsed        String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  createdAt        DateTime @default(now())
+}
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  company       String
+  name          String
+  sku           String
+  category      String
+  purchasePrice Float
+  sellingPrice  Float
+  minQuantity   Int       @default(10)
+  reorderLevel  Int       @default(20)
+  unit          String
+  isActive      Boolean   @default(true)
+  vatSetting    String
+  imageUrl      String?
+  barcode       String?
+  currentStock  Int       @default(0)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  orderSlipItems OrderSlipItem[]
+
+  @@index([company])
+  @@index([sku])
+}
+
+model InventoryMovement {
+  id            String   @id @default(uuid())
+  productId     Int
+  productName   String
+  sku           String
+  type          String   
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reference     String?
+  remarks       String?
+  date          DateTime @default(now())
+  user          String
+  company       String
+
+  batchNumber    String?
+  expirationDate DateTime?
+  
+  warehouseId    Int?
+  warehouse      Warehouse? @relation(fields: [warehouseId], references: [id])
+  
+  employeeId     Int?
+  employee       Employee?  @relation(fields: [employeeId], references: [id])
+}
+
+model Warehouse {
+  id        Int      @id @default(autoincrement())
+  company   String   
+  name      String   
+  address   String   @default("Not Specified") 
+  status    String   @default("Active") 
+  createdAt DateTime @default(now())
+
+  inventoryMovements InventoryMovement[] 
+}
+
+model WarehouseStock {
+  id          String   @id @default(uuid())
+  warehouseId String
+  productId   Int
+  sku         String
+  quantity    Int      @default(0)
+  company     String
+  lastUpdated DateTime @default(now())
+
+  @@unique([warehouseId, productId])
+}
+
+model WarehouseTransfer {
+  id            String   @id @default(uuid())
+  sourceId      String
+  destinationId String
+  productId     Int
+  sku           String
+  quantity      Int
+  transferDate  DateTime @default(now())
+  reference     String?
+  user          String
+  company       String
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  company     String
+  name        String
+  contact     String?
+  phone       String?
+  email       String?
+  address     String?
+  creditLimit Float    @default(0)
+  balance     Float    @default(0) 
+  createdAt   DateTime @default(now())
+
+  orderSlips  OrderSlip[]
+  shortages   Shortage[]
+}
+
+model Supplier {
+  id            String   @id @default(uuid())
+  company       String   // For multi-tenant workspace isolation
+  legalName     String
+  tradeName     String?
+  tin           String
+  address       String
+  contactPerson String?
+  phone         String?
+  email         String?
+  paymentTerms  String   @default("Cash on Delivery")
+  apBalance     Float    @default(0.00) // Accounts Payable running balance
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relational link to Purchase Orders
+  purchaseOrders PurchaseOrder[] 
+  catalog Json? @default("[]")
+}
+
+model OrderSlip {
+  id          String         @id @default(uuid())
+  osNumber    String         @unique
+  referenceOs  String?
+  company     String
+  
+  customerId  String
+  customer    Customer       @relation(fields: [customerId], references: [id])
+  
+  date        DateTime       @default(now())
+  status      String         @default("Draft")
+  
+  subtotal    Decimal        @db.Decimal(12, 2)
+  vatApplied  Boolean        @default(false)
+  vatRate     Decimal        @default(0.12) @db.Decimal(4, 2)
+  vatAmount   Decimal        @db.Decimal(12, 2)
+  grandTotal  Decimal        @db.Decimal(12, 2)
+  
+  createdBy   String
+  updatedBy   String?
+  processedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  items       OrderSlipItem[]
+  shortages   Shortage[]
+
+  @@index([company])
+}
+
+model OrderSlipItem {
+  id           String    @id @default(uuid())
+  
+  orderSlipId  String
+  orderSlip    OrderSlip @relation(fields: [orderSlipId], references: [id], onDelete: Cascade)
+  
+  productId    Int
+  product      Product   @relation(fields: [productId], references: [id])
+  
+  sku          String
+  productName  String  
+  
+  requestedQty Int
+  confirmedQty Int?
+  shortageQty  Int?
+  unitPrice    Decimal   @db.Decimal(12, 2)
+  lineTotal    Decimal   @db.Decimal(12, 2)
+
+  shortages    Shortage[]
+}
+
+model Shortage {
+  id                  String          @id @default(uuid())
+  company             String
+  sku                 String
+  productName         String
+  requestedQty        Int
+  confirmedQty        Int
+  shortageQty         Int
+  status              String          @default("Open")
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  // 1. SCALAR FIELDS (Made Optional)
+  orderSlipId         String?
+  orderSlipItemId     String?
+  customerId          String?
+  osNumber            String?
+ 
+  // 2. RELATION FIELDS (Made Optional)
+  orderSlip           OrderSlip?      @relation(fields: [orderSlipId], references: [id], onDelete: Cascade)
+  orderSlipItem       OrderSlipItem?  @relation(fields: [orderSlipItemId], references: [id], onDelete: Cascade)
+  customer            Customer?       @relation(fields: [customerId], references: [id])
+
+  @@index([company])
+  @@index([orderSlipId])
+
+  // 3. P.O. SPECIFIC FIELDS
+  poNumber            String?
+  purchaseOrderId     String?
+  purchaseOrderItemId String?
+}
+
+model PurchaseOrder {
+  id          String   @id @default(uuid())
+  poNumber    String   @unique
+  company     String
+  status      String   // Generated, Partially Received, Received, Cancelled
+  subtotal    Float
+  vatApplied  Boolean  @default(false)
+  vatRate     Float    @default(0.12)
+  vatAmount   Float    @default(0)
+  grandTotal  Float
+  createdBy   String
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  receivedAt  DateTime?
+  osReference String?  // Links directly to the OS it was generated from
+
+  items       PurchaseOrderItem[]
+  supplierId   String?
+  supplier     Supplier? @relation(fields: [supplierId], references: [id])
+}
+
+model PurchaseOrderItem {
+  id              String @id @default(uuid())
+  purchaseOrderId String
+  productId       Int
+  sku             String
+  productName     String
+  requestedQty    Int
+  confirmedQty    Int?
+  shortageQty     Int?
+  unitCost        Float
+  lineTotal       Float
+
+  po PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+}
+
+// NOTE: Add these 3 lines inside your EXISTING Shortage model:
